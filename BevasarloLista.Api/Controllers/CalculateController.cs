@@ -8,41 +8,57 @@ namespace BevasarloLista.Api.Controllers
     [ApiController]
     public class CalculateController : ControllerBase
     {
-        private ListDbContext dbContext;
+        private ListDbContext _dbContext;
 
         public CalculateController(ListDbContext dbContext)
         {
-            this.dbContext = dbContext;
+            _dbContext = dbContext;
         }
 
         [HttpGet]
         public async Task<ActionResult<Double>> Get(int year, int month, int userId)
         {
-            var date = new DateTime(year, month, 1);
-            var user = dbContext.Users.Find(userId);
-
-            var result = Calculate(user, dbContext.Users.Count(), dbContext.Items.AsQueryable(), date);
+            if (year < 1 || year > DateTime.MaxValue.Year || month < 1 || month > 12)
+            {
+                return BadRequest("Invalid year or month.");
+            }
+            if (await _dbContext.Users.FindAsync(userId) == null)
+            {
+                return BadRequest("Invalid user id.");
+            }
+            var result = Calculate(
+                await _dbContext.Users.FindAsync(userId),
+                await _dbContext.Users.CountAsync(),
+                _dbContext.Items.AsQueryable(),
+                new DateTime(year, month, 1));
             return Ok(result);
-            
+
         }
 
         public static double Calculate(User currentUser, int userCount, IQueryable<Item> items, DateTime date)
         {
+            // Calculate the amount of money user has to pay or will get back
+            // if the sum is positive, the user has to pay
+            // if the sum is negative, the user will get back
             double sum = 0;
 
-            sum += items.Where(i => i.For == currentUser && i.CheckedBy != currentUser
+            sum += items.Where(i => i.ForId == currentUser.Id && i.CheckedById != currentUser.Id
                 && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
                 .Select(i => i.Price * i.Amount).Sum(); //AMI AZ ÖVÉ, DE NEM Ő VETT MEG
 
-            sum += items.Where(i => i.For == null
+            sum += items.Where(i => i.ForId == null
              && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
                 .Select(i => i.Price * i.Amount / userCount)
                 .Sum(); //KÖZÖS
 
-            sum -= items.Where(i => i.For == null && i.CheckedBy == currentUser
+            sum -= items.Where(i => i.ForId == null && i.CheckedById == currentUser.Id
              && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
-                .Select(i => i.Price * i.Amount / userCount).Sum(); // KÖZÖS, DE Ö VETTE MEG
+                .Select(i => i.Price * i.Amount / userCount).Sum(); // KÖZÖS, DE Ő VETTE MEG
 
+            sum -= items.Where(i => i.ForId != currentUser.Id && i.CheckedById == currentUser.Id
+             && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
+                .Select(i => i.Price * i.Amount).Sum();
+            // MÁSOKÉ, DE Ő VETTE MEG
             return sum;
         }
 
