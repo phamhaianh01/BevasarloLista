@@ -42,20 +42,20 @@ namespace BevasarloLista.Api.Controllers
             // if the sum is negative, the user will get back
             double sum = 0;
 
-            sum += items.Where(i => i.ForId == currentUser.Id && i.CheckedById != currentUser.Id
+            sum += items.Where(i => i.ForUserId == currentUser.Id && i.CheckedById != currentUser.Id
                 && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
                 .Select(i => i.Price * i.Amount).Sum(); //AMI AZ ÖVÉ, DE NEM Ő VETT MEG
 
-            sum += items.Where(i => i.ForId == null
+            sum += items.Where(i => i.ForUserId == null
              && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
                 .Select(i => i.Price * i.Amount / userCount)
                 .Sum(); //KÖZÖS
 
-            sum -= items.Where(i => i.ForId == null && i.CheckedById == currentUser.Id
+            sum -= items.Where(i => i.ForUserId == null && i.CheckedById == currentUser.Id
              && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
                 .Select(i => i.Price * i.Amount / userCount).Sum(); // KÖZÖS, DE Ő VETTE MEG
 
-            sum -= items.Where(i => i.ForId != currentUser.Id && i.CheckedById == currentUser.Id
+            sum -= items.Where(i => i.ForUserId != currentUser.Id && i.CheckedById == currentUser.Id
              && i.PurchaseDate.Month == date.Month && i.PurchaseDate.Year == date.Year)
                 .Select(i => i.Price * i.Amount).Sum();
             // MÁSOKÉ, DE Ő VETTE MEG

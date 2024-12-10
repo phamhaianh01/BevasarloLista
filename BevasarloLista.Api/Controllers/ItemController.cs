@@ -36,39 +36,39 @@ namespace BevasarloLista.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<IEnumerable<Item>>> Put(int Id, [FromBody] Item item)
+        public async Task<ActionResult<IEnumerable<Item>>> Put(int id, [FromBody] Item item)
         {
-            var DbItem = await _dbContext.Items.FindAsync(Id);
+            var DbItem = await _dbContext.Items.FindAsync(id);
             if (DbItem == null)
             {
                 return NotFound();
             }
-            _dbContext.Items.Update(item);
+
+            DbItem.Name = item.Name;
+            DbItem.Amount = item.Amount;
+            DbItem.Price = item.Price;
+            DbItem.PurchaseDate = item.PurchaseDate;
+            DbItem.ForUserId = item.ForUserId;
+            DbItem.CheckedById = item.CheckedById;
+
+            _dbContext.Items.Update(DbItem);
             await _dbContext.SaveChangesAsync();
-            var itemList = await _dbContext.Items.ToListAsync();
-            return Ok(itemList);
+            return Ok(DbItem);
         }
 
 
         [HttpPost]
         public async Task<ActionResult<IEnumerable<Item>>> Post([FromBody] Item item)
         {
+
             if (_dbContext.Items.Find(item.Id) != null)
             {
                 return BadRequest($"Id {item.Id} already exists");
             }
-            if (_dbContext.Users.Find(item.ForId) == null || _dbContext.Users.Find(item.CheckedById) == null)
-            {
-                return BadRequest($"User with Id: {item.ForId} not found");
-            }
-            if (_dbContext.Users.Find(item.CheckedById) == null)
-            {
-                return BadRequest($"User with Id: {item.CheckedById} not found");
-            }
             _dbContext.Items.Add(item);
             await _dbContext.SaveChangesAsync();
-            var itemList = await _dbContext.Items.ToListAsync();
-            return Ok(itemList);
+            
+            return Ok(item);
         }
 
         [HttpDelete("{id}")]
@@ -82,8 +82,8 @@ namespace BevasarloLista.Api.Controllers
 
             _dbContext.Items.Remove(item);
             await _dbContext.SaveChangesAsync();
-            var itemList = await _dbContext.Items.ToListAsync();
-            return Ok(itemList);
+            
+            return Ok(item);
         }
     }
 }
