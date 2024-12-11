@@ -72,9 +72,9 @@ namespace BevasarloLista.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult<IEnumerable<Item>>> Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            var item = _dbContext.Items.Find(id);
+            var item = await _dbContext.Items.FindAsync(id);
             if (item == null)
             {
                 return NotFound();
@@ -83,6 +83,20 @@ namespace BevasarloLista.Api.Controllers
             _dbContext.Items.Remove(item);
             await _dbContext.SaveChangesAsync();
             
+            return NoContent();
+        }
+
+        [HttpPatch("{id}/check")]
+        public async Task<IActionResult> UpdateCheckedById(int id, [FromBody] int? checkedById)
+        {
+            var item = await _dbContext.Items.FindAsync(id);
+            if (item == null)
+            {
+                return NotFound();
+            }
+
+            item.CheckedById = checkedById;
+            await _dbContext.SaveChangesAsync();
             return Ok(item);
         }
     }
